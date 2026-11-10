@@ -10,7 +10,7 @@ If the page is not accessible, inspect the [Publish workflow](https://github.com
 
 ## What works today
 - Responsive six-card AISG portal
-- Original AISG logo, navy/red palette, desktop navigation and mobile layout
+- Original AISG logo displayed prominently in a spacious white welcome panel; six consistent tiles, navy/red palette, responsive header and mobile layout
 - Shared dashboard switcher and bookmarkable in-app routes
 - Readable status for fictional demos vs awaiting secure migration
 - Optional links to existing **fictional** prototype sites, shown transparently as separate sites
