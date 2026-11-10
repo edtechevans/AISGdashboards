@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env*
+!.env.example
+*.csv
+*.xlsx
+*.xls
+*.pdf
+*.docx
+private/
+secrets/
+student-data/
+faculty-data/
+observation-data/
+raw-surveys/
