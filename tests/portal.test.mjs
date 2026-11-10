@@ -32,7 +32,7 @@ test('workspace routes stay inside the shell and dashboard switcher works',()=>{
   p.navigate(p.location.hash);
   assert.ok(p.app.innerHTML.includes('Secure migration'));
   p.navigate('#/');
-  assert.ok(p.app.innerHTML.includes('Where would you like to go?'));
+  assert.ok(p.app.innerHTML.includes('Your dashboards'));
 });
 test('public shell does not embed live apps or confidential datasets',()=>{
   assert.doesNotMatch(source,/<iframe|observations-full[.]csv|faculty-goals[.]json|data\/student-/i);
@@ -44,4 +44,26 @@ test('brand asset and relative links exist',()=>{
   assert.ok(html.includes('href="styles.css"'));
   assert.ok(html.includes('src="app.js"'));
   assert.ok(source.includes('assets/aisg-logo.webp'));
+});
+
+test('reference design uses prominent white AISG welcome tile, not a dark hero or side rail',()=>{
+  const {app}=renderApp();
+  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+  assert.ok(app.innerHTML.includes('class="welcome-brand"'));
+  assert.ok(app.innerHTML.includes('AISG — American International School of Guangzhou'));
+  assert.ok(app.innerHTML.includes('class="tile-grid"'));
+  assert.ok(app.innerHTML.includes('class="lower-grid"'));
+  assert.ok(app.innerHTML.includes('class="tile-head"'));
+  assert.doesNotMatch(app.innerHTML,/class="rail"|class="hero"/);
+  assert.match(css,/\.welcome\s*\{[^}]*background:var\(--surface\)/);
+  assert.match(css,/\.tile-grid\s*\{[^}]*repeat\(3/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+});
+test('all six cards contain an SVG icon, a truthfully labeled status and a real route',()=>{
+  const {app}=renderApp();
+  assert.equal((app.innerHTML.match(/class="tile-icon"/g)||[]).length,6);
+  assert.equal((app.innerHTML.match(/class="tile-status /g)||[]).length,6);
+  assert.equal((app.innerHTML.match(/class="tile-bottom"/g)||[]).length,6);
+  for (const w of ['my-learners','growth','climate','leaders','sss','board'])
+    assert.ok(app.innerHTML.includes('href="#/workspace/'+w+'"'));
 });
