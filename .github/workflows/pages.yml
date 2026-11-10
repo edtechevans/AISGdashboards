@@ -1,0 +1,70 @@
+name: AISG Dashboards — verify and publish prototype
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: aisg-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify app syntax and routes
+        run: |
+          node --check app.js
+          node --test tests/portal.test.mjs
+      - name: Check public release contents
+        shell: bash
+        run: |
+          set -eu
+          test -f index.html
+          test -f styles.css
+          test -f app.js
+          test -f assets/aisg-logo.webp
+          test ! -d data
+          test ! -d private
+          test ! -d secrets
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Stage reviewed, public-safe files only
+        run: |
+          mkdir -p public/assets
+          cp index.html styles.css app.js public/
+          cp assets/aisg-logo.webp public/assets/
+          printf '' > public/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > public/robots.txt
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
