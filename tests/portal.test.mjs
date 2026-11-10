@@ -1,0 +1,47 @@
+import {readFileSync, existsSync} from 'node:fs';
+import {strict as assert} from 'node:assert';
+import test from 'node:test';
+import vm from 'node:vm';
+
+const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+
+function renderApp(hash='#/'){
+  const app={innerHTML:''};
+  const switcher={value:'', addEventListener(name,fn){if(name==='change')this.change=fn;}};
+  const elements={app,switch:switcher};
+  const document={title:'',getElementById(id){return elements[id]}};
+  const location={hash};
+  let onChange;
+  vm.runInNewContext(source,{document,location,addEventListener(name,fn){if(name==='hashchange')onChange=fn;}},{timeout:1500});
+  return {app,document,location,switcher,navigate(to){location.hash=to;onChange();}};
+}
+test('six distinct workspaces render on the landing page',()=>{
+  const {app}=renderApp();
+  assert.equal((app.innerHTML.match(/class="tile"/g)||[]).length,6);
+  for(const heading of ['My Learners','Growth & Reflection','Climate & Wellbeing','Learning Leaders','Student Support','Board'])
+    assert.ok(app.innerHTML.includes(heading),heading);
+});
+test('workspace routes stay inside the shell and dashboard switcher works',()=>{
+  const p=renderApp();
+  p.navigate('#/workspace/sss');
+  assert.ok(p.app.innerHTML.includes('Student Support'));
+  assert.ok(p.app.innerHTML.includes('Integration in progress'));
+  p.switcher.change({target:{value:'climate'}});
+  assert.equal(p.location.hash,'#/workspace/climate');
+  p.navigate(p.location.hash);
+  assert.ok(p.app.innerHTML.includes('Secure migration'));
+  p.navigate('#/');
+  assert.ok(p.app.innerHTML.includes('Where would you like to go?'));
+});
+test('public shell does not embed live apps or confidential datasets',()=>{
+  assert.doesNotMatch(source,/<iframe|observations-full[.]csv|faculty-goals[.]json|data\/student-/i);
+  assert.ok(html.includes('noindex,nofollow'));
+  for(const folder of ['data','secrets','private'])assert.equal(existsSync(new URL('../'+folder+'/',import.meta.url)),false);
+});
+test('brand asset and relative links exist',()=>{
+  assert.ok(existsSync(new URL('../assets/aisg-logo.webp',import.meta.url)));
+  assert.ok(html.includes('href="styles.css"'));
+  assert.ok(html.includes('src="app.js"'));
+  assert.ok(source.includes('assets/aisg-logo.webp'));
+});
